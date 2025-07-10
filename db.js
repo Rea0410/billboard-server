@@ -1,20 +1,11 @@
-// db.js
-import mysql from 'mysql2';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-const db = mysql.createConnection({
-  host: '127.0.0.1',      // don't use 'localhost' to avoid socket issues
-  port: 3307,             // ✅ confirmed from your my.ini
-  user: 'root',           // default user
-  password: '',           // if blank in XAMPP
-  database: 'viewbear'    // make sure this DB exists in phpMyAdmin
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // required for Render PostgreSQL
+  },
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error('❌ Database connection failed:', err.message);
-  } else {
-    console.log('✅ Successfully connected to MySQL!');
-  }
-});
-
-export default db;
+export default pool;

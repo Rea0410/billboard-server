@@ -5,21 +5,19 @@ import db from './db.js';
 
 const router = express.Router();
 
-// ✅ Multer storage config
+// ✅ Multer config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'Public/Images');
+    cb(null, 'public/images'); // Make sure this is lowercase and matches folder name
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname); 
-cb(null, Date.now() + '-' + file.fieldname + ext);
-
+    cb(null, Date.now() + '-' + file.fieldname + ext);
   },
 });
+const upload = multer({ storage });
 
-const upload = multer({ storage: storage });
-
-// ✅ Billboard upload route
+// ✅ Upload route
 router.post('/addbillboard/billboards', (req, res) => {
   upload.fields([
     { name: 'imageL' },
@@ -36,35 +34,45 @@ router.post('/addbillboard/billboards', (req, res) => {
     const imageL = req.files?.imageL?.[0]?.filename || '';
     const image2 = req.files?.image2?.[0]?.filename || '';
 
-    // console.log('📝 Body:', data);
-    // console.log('📂 Files:', req.files);
-
     const query = `
       INSERT INTO billboards 
       (name, price, lat, lang, address, size, type, status, imageL, imageR, image2)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id
     `;
 
-    db.query(query, [
+    const values = [
       data.name, data.price, data.lat, data.lang,
       data.address, data.size, data.type, data.status,
       imageL, imageR, image2
-    ], (err, result) => {
+    ];
+
+    db.query(query, values, (err, result) => {
       if (err) {
-        console.error("❌ MySQL Error:", err);
+        console.error("❌ PostgreSQL Error:", err);
         return res.status(500).send("Database insert failed");
       }
 
-      res.json({ id: result.insertId, ...data, imageL, imageR, image2 });
+      res.json({
+        id: result.rows[0].id,
+        ...data,
+        imageL,
+        imageR,
+        image2
+      });
     });
   });
 });
 
+// ✅ GET route to list billboards
 router.get('/', (req, res) => {
-  res.json({ message: "API working without DB" });
+  db.query('SELECT * FROM billboards', (err, result) => {
+    if (err) return res.status(500).send(err);
+    res.json(result.rows);
+  });
 });
 
-// Optional: Serve images statically
-router.use('/uploads', express.static('public/images')); 
+// ✅ Serve images
+router.use('/uploads', express.static('public/images'));
 
 export default router;
