@@ -61,10 +61,7 @@ router.post('/addbillboard/billboards', (req, res) => {
 });
 
 router.get('/', (req, res) => {
-  db.query('SELECT * FROM billboards', (err, results) => {
-    if (err) return res.status(500).send(err);
-    res.json(results);
-  });
+  res.json({ message: "API working without DB" });
 });
 
 // Optional: Serve images statically
